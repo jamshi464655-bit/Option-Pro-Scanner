@@ -26,14 +26,14 @@ st.markdown("""
         box-shadow: 0 5px 15px rgba(0,0,0,0.2);
         height: 130px;
     }
-    .panel-title {
+    .panel {
         background: linear-gradient(135deg, #f59e0b, #fb923c);
         color: white;
-        padding: 12px;
-        border-radius: 10px;
-        font-weight: bold;
+        padding: 15px;
+        border-radius: 12px;
         text-align: center;
-        margin: 15px 0 10px 0;
+        font-weight: bold;
+        margin: 10px 0;
     }
     .positive { color: #4ade80; font-weight: bold; }
     .negative { color: #f87171; font-weight: bold; }
@@ -47,72 +47,67 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-st.button("🚀 START MARKET SCAN", type="primary", use_container_width=True)
+if st.button("🚀 START MARKET SCAN", type="primary", use_container_width=True):
+    with st.spinner("Fetching Live Market Data..."):
+        # Fetch Data
+        nifty = yf.download("^NSEI", period="2d", interval="15m", progress=False)
+        banknifty = yf.download("^NSEBANK", period="2d", interval="15m", progress=False)
+        vix = yf.download("^INDIAVIX", period="2d", interval="15m", progress=False)
 
-# ================== DATA FETCHING ==================
-@st.cache_data(ttl=30)
-def get_index_data(ticker):
-    try:
-        data = yf.download(ticker, period="2d", interval="15m", progress=False)
-        if not data.empty:
-            h, l, c = data['High'].iloc[-2], data['Low'].iloc[-2], data['Close'].iloc[-2]
+        nifty_price = round(nifty['Close'].iloc[-1], 2) if not nifty.empty else 0
+        bank_price = round(banknifty['Close'].iloc[-1], 2) if not banknifty.empty else 0
+        vix_price = round(vix['Close'].iloc[-1], 2) if not vix.empty else 0
+
+        # Pivot Levels for Nifty
+        def get_pivots(df):
+            if df.empty: return {}
+            h, l, c = df['High'].iloc[-2], df['Low'].iloc[-2], df['Close'].iloc[-2]
             p = (h + l + c) / 3
-            curr = round(data['Close'].iloc[-1], 2)
             return {
-                "curr": curr,
-                "R1": round(2*p - l, 2), "S1": round(2*p - h, 2),
-                "R2": round(p + (h-l), 2), "S2": round(p - (h-l), 2)
+                "R1": round(2*p - l, 2), "R2": round(p + (h-l), 2), "R3": round(h + 2*(p-l), 2),
+                "S1": round(2*p - h, 2), "S2": round(p - (h-l), 2), "S3": round(l - 2*(h-p), 2)
             }
-    except:
-        return None
 
-nifty = get_index_data("^NSEI")
-banknifty = get_index_data("^NSEBANK")
-vix = get_index_data("^INDIAVIX")
+        nifty_pivot = get_pivots(nifty)
 
-# ================== METRIC CARDS (നിങ്ങൾ കാണിച്ച ഡിസൈൻ പോലെ) ==================
-c1, c2, c3 = st.columns(3)
+        st.success(f"✅ Scan Completed at {datetime.now().strftime('%I:%M:%S %p')}")
 
-with c1:
-    st.markdown(f"""
-    <div class="metric-card">
-        <h1 style="margin:0;">{nifty['curr'] if nifty else '—'}</h1>
-        <p>NIFTY 50</p>
-    </div>
-    """, unsafe_allow_html=True)
+        # ====================== METRIC CARDS ======================
+        c1, c2, c3 = st.columns(3)
+        with c1:
+            st.markdown(f"""
+            <div class="metric-card" style="background: linear-gradient(135deg, #a855f7, #c084fc);">
+                <h2>NIFTY 50</h2>
+                <h1>{nifty_price}</h1>
+            </div>
+            """, unsafe_allow_html=True)
 
-with c2:
-    st.markdown(f"""
-    <div class="metric-card" style="background: linear-gradient(135deg, #22c55e, #86efac); color:black;">
-        <h1 style="margin:0;color:black;">{banknifty['curr'] if banknifty else '—'}</h1>
-        <p style="color:black;">BANK NIFTY</p>
-    </div>
-    """, unsafe_allow_html=True)
+        with c2:
+            st.markdown(f"""
+            <div class="metric-card" style="background: linear-gradient(135deg, #22c55e, #86efac); color:black;">
+                <h2>BANK NIFTY</h2>
+                <h1 style="color:black;">{bank_price}</h1>
+            </div>
+            """, unsafe_allow_html=True)
 
-with c3:
-    st.markdown(f"""
-    <div class="metric-card" style="background: linear-gradient(135deg, #a855f7, #c084fc);">
-        <h1 style="margin:0;">{vix['curr'] if vix else '—'}</h1>
-        <p>INDIA VIX</p>
-    </div>
-    """, unsafe_allow_html=True)
+        with c3:
+            st.markdown(f"""
+            <div class="metric-card" style="background: linear-gradient(135deg, #f59e0b, #fbbf24); color:black;">
+                <h2>INDIA VIX</h2>
+                <h1 style="color:black;">{vix_price}</h1>
+            </div>
+            """, unsafe_allow_html=True)
 
-st.markdown("---")
+        # Pivot Levels & Option Chain
+        st.markdown('<div class="panel">📍 NIFTY 50 Pivot Levels</div>', unsafe_allow_html=True)
+        if nifty_pivot:
+            st.write(f"**R1:** {nifty_pivot['R1']} | **R2:** {nifty_pivot['R2']} | **R3:** {nifty_pivot['R3']}")
+            st.write(f"**S1:** {nifty_pivot['S1']} | **S2:** {nifty_pivot['S2']} | **S3:** {nifty_pivot['S3']}")
 
-# Option Chain & Pivot Levels
-col1, col2 = st.columns(2)
-with col1:
-    st.markdown('<div class="panel-title">📍 NIFTY 50 Pivot Levels</div>', unsafe_allow_html=True)
-    if nifty:
-        st.write(f"**Current**: {nifty['curr']}")
-        st.write(f"R1: {nifty['R1']} | S1: {nifty['S1']}")
-        st.write(f"R2: {nifty['R2']} | S2: {nifty['S2']}")
+        st.markdown('<div class="panel">📊 Option Chain (ATM Strikes)</div>', unsafe_allow_html=True)
+        st.info("Option Chain display ഇവിടെ ചേർക്കാം. നിങ്ങൾക്ക് വേണമെങ്കിൽ പറയൂ — ഞാൻ full option chain ചേർത്തു തരാം.")
 
-with col2:
-    st.markdown('<div class="panel-title">📊 Option Chain (ATM Strikes)</div>', unsafe_allow_html=True)
-    st.info("Option Chain display ഇവിടെ ചേർക്കാം (നിങ്ങൾക്ക് വേണമെങ്കിൽ പറയൂ)")
+else:
+    st.info("👆 'START MARKET SCAN' ബട്ടൺ ക്ലിക്ക് ചെയ്ത് സ്കാൻ തുടങ്ങൂ")
 
-st.caption(f"🕒 Last Updated: {datetime.now().strftime('%I:%M:%S %p')} | Beautiful UI by Grok")
-
-if st.button("🔄 Refresh Data"):
-    st.rerun()
+st.caption("Beautiful Ultra Scanner UI • Powered by yfinance • Made with ❤️")
