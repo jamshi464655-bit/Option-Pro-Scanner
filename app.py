@@ -1,11 +1,9 @@
 import streamlit as st
 import yfinance as yf
-import pandas as pd
 from datetime import datetime
 
 st.set_page_config(page_title="EasyCharts Pro - Ultra Scanner", layout="wide")
 
-# ---------- CSS ----------
 st.markdown("""
 <style>
 .main-header {
@@ -17,21 +15,20 @@ st.markdown("""
     margin-bottom:25px;
 }
 .card {
-    background:#161b22;
-    padding:20px;
+    background:#111827;
+    padding:25px;
     border-radius:15px;
     text-align:center;
-    border:1px solid #30363d;
-    margin-bottom:10px;
+    margin-bottom:15px;
+    color:white;
 }
 .value {
-    font-size:28px;
+    font-size:32px;
     font-weight:bold;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------- HEADER ----------
 st.markdown("""
 <div class="main-header">
 <h1>🚀 EasyCharts Pro - Ultra Scanner</h1>
@@ -39,20 +36,17 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# ---------- FUNCTION ----------
 def get_index_price(symbol):
     try:
-        df = yf.download(symbol, period="1d", interval="5m", progress=False)
+        df = yf.download(symbol, period="5d", interval="1d", progress=False)
         if df.empty:
             return None
         return round(float(df["Close"].iloc[-1]), 2)
     except:
         return None
 
-# ---------- BUTTON ----------
 if st.button("🚀 START MARKET SCAN"):
-
-    with st.spinner("Fetching live data..."):
+    with st.spinner("Fetching data..."):
         nifty = get_index_price("^NSEI")
         bank = get_index_price("^NSEBANK")
         vix = get_index_price("^INDIAVIX")
@@ -65,7 +59,7 @@ if st.button("🚀 START MARKET SCAN"):
         st.markdown(f"""
         <div class="card">
             <h3>NIFTY 50</h3>
-            <div class="value">{nifty if nifty else "Data Error"}</div>
+            <div class="value">{nifty if nifty else "Unavailable"}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -73,7 +67,7 @@ if st.button("🚀 START MARKET SCAN"):
         st.markdown(f"""
         <div class="card">
             <h3>BANK NIFTY</h3>
-            <div class="value">{bank if bank else "Data Error"}</div>
+            <div class="value">{bank if bank else "Unavailable"}</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -81,7 +75,7 @@ if st.button("🚀 START MARKET SCAN"):
         st.markdown(f"""
         <div class="card">
             <h3>INDIA VIX</h3>
-            <div class="value">{vix if vix else "Data Error"}</div>
+            <div class="value">{vix if vix else "Unavailable"}</div>
         </div>
         """, unsafe_allow_html=True)
 
