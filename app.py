@@ -1,92 +1,110 @@
 import streamlit as st
 import yfinance as yf
-import pandas as pd
 from datetime import datetime
 
-st.set_page_config(page_title="Ultimate Pro Master Scanner", layout="wide")
+st.set_page_config(page_title="EasyCharts Pro - Ultra Scanner", layout="wide", page_icon="🚀")
 
-# ---------- CSS ----------
+# ====================== BEAUTIFUL UI ======================
 st.markdown("""
 <style>
-.stApp { background-color:#0b0e14; color:white; }
-.card {
-    background:#161b22;
-    padding:20px;
-    border-radius:15px;
-    text-align:center;
-    border:1px solid #30363d;
-    margin-bottom:15px;
-}
-.top-bar {
-    display:flex;
-    justify-content:space-around;
-    background:#1f2937;
-    padding:12px;
-    border-radius:10px;
-    margin-bottom:20px;
-}
-.stock-grid {
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(100px,1fr));
-    gap:6px;
-}
-.pos { background:#1c2a1e; color:#44cf6c; padding:8px; border-radius:6px; }
-.neg { background:#2a1c1c; color:#ff7b72; padding:8px; border-radius:6px; }
+    .header {
+        background: linear-gradient(135deg, #6b46c1, #7c3aed);
+        padding: 35px;
+        border-radius: 20px;
+        text-align: center;
+        color: white;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+    }
+    .scan-btn {
+        background: linear-gradient(135deg, #ef4444, #f87171);
+        color: white;
+        padding: 15px;
+        border-radius: 12px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 18px;
+        margin: 15px 0;
+        cursor: pointer;
+    }
+    .metric-card {
+        padding: 20px;
+        border-radius: 15px;
+        text-align: center;
+        color: white;
+        font-weight: bold;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        min-height: 140px;
+    }
+    .nifty-card { background: linear-gradient(135deg, #a855f7, #c084fc); }
+    .bank-card { background: linear-gradient(135deg, #22c55e, #86efac); color: black; }
+    .vix-card { background: linear-gradient(135deg, #f59e0b, #fbbf24); color: black; }
+    .status-bar {
+        background: #ecfdf5;
+        color: #166534;
+        padding: 12px;
+        border-radius: 10px;
+        text-align: center;
+        font-weight: bold;
+        margin: 15px 0;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("<h2 style='text-align:center;'>🎯 Ultimate Option Pro Master Scanner</h2>", unsafe_allow_html=True)
+st.markdown("""
+<div class="header">
+    <h1>🚀 EasyCharts Pro - Ultra Scanner</h1>
+    <p>AI-Powered Multi-Index & Option Master Scanner</p>
+</div>
+""", unsafe_allow_html=True)
 
-# ---------- FUNCTIONS ----------
+if st.button("🚀 START MARKET SCAN", type="primary", use_container_width=True):
+    with st.spinner("Fetching Live Market Data..."):
+        try:
+            nifty = yf.download("^NSEI", period="2d", interval="5m", progress=False)
+            banknifty = yf.download("^NSEBANK", period="2d", interval="5m", progress=False)
+            vix = yf.download("^INDIAVIX", period="2d", interval="5m", progress=False)
 
-def get_index_price(symbol):
-    try:
-        df = yf.download(symbol, period="5d", interval="1d", progress=False)
-        if df.empty:
-            return None
-        return round(float(df["Close"].iloc[-1]), 2)
-    except:
-        return None
+            nifty_price = round(nifty['Close'].iloc[-1], 2) if not nifty.empty else 0
+            bank_price = round(banknifty['Close'].iloc[-1], 2) if not banknifty.empty else 0
+            vix_price = round(vix['Close'].iloc[-1], 2) if not vix.empty else 0
 
-def get_heatmap():
-    tickers = [
-        "RELIANCE.NS","TCS.NS","HDFCBANK.NS","INFY.NS",
-        "ICICIBANK.NS","SBIN.NS","ITC.NS","BHARTIARTL.NS",
-        "LT.NS","KOTAKBANK.NS"
-    ]
-    try:
-        df = yf.download(tickers, period="2d", interval="1d", progress=False)["Close"]
-        change = ((df.iloc[-1] - df.iloc[-2]) / df.iloc[-2]) * 100
-        return change
-    except:
-        return None
+            st.success(f"✅ Scan Completed at {datetime.now().strftime('%I:%M:%S %p')}")
 
-# ---------- BUTTON ----------
-if st.button("🚀 START MARKET SCAN"):
+            col1, col2, col3 = st.columns(3)
+            
+            with col1:
+                st.markdown(f"""
+                <div class="metric-card nifty-card">
+                    <h3>NIFTY 50</h3>
+                    <h1>{nifty_price}</h1>
+                </div>
+                """, unsafe_allow_html=True)
 
-    with st.spinner("Fetching market data..."):
-        nifty = get_index_price("^NSEI")
-        bank = get_index_price("^NSEBANK")
-        vix = get_index_price("^INDIAVIX")
-        heatmap = get_heatmap()
+            with col2:
+                st.markdown(f"""
+                <div class="metric-card bank-card">
+                    <h3>BANK NIFTY</h3>
+                    <h1>{bank_price}</h1>
+                </div>
+                """, unsafe_allow_html=True)
 
-    st.success(f"✅ Scan Completed at {datetime.now().strftime('%I:%M:%S %p')}")
+            with col3:
+                st.markdown(f"""
+                <div class="metric-card vix-card">
+                    <h3>INDIA VIX</h3>
+                    <h1>{vix_price}</h1>
+                </div>
+                """, unsafe_allow_html=True)
 
-    # ---------- TOP BAR ----------
-    st.markdown(f"""
-    <div class="top-bar">
-        <span>📊 NIFTY: <b>{nifty if nifty else 'Unavailable'}</b></span>
-        <span>🏦 BANKNIFTY: <b>{bank if bank else 'Unavailable'}</b></span>
-        <span>🌪 INDIA VIX: <b>{vix if vix else 'Unavailable'}</b></span>
-    </div>
-    """, unsafe_allow_html=True)
+            st.markdown("---")
+            st.info("📍 Pivot Levels, Option Chain, Heatmap എന്നിവ ചേർക്കാൻ വേണമെങ്കിൽ പറയൂ — ഞാൻ ഉടനെ ചേർത്തു തരാം.")
 
-    # ---------- CARDS ----------
-    col1, col2 = st.columns(2)
+        except Exception as e:
+            st.error(f"Data Error: {str(e)}")
+            st.info("യാഹൂ ഫിനാൻസ് ഡാറ്റ ലഭ്യമല്ല. കുറച്ച് സമയം കഴിഞ്ഞ് വീണ്ടും ശ്രമിക്കുക.")
 
-    with col1:
-        st.markdown(f"""
-        <div class="card">
-            <h3>NIFTY 50</h3>
-            <h1>{nifty if nifty else 'No Data'}</h1>
-            <a href="https://www.tradingview.com/chart/?symbol=NSE:NIFTY" target="_blank">Open Chart</a>
+else:
+    st.info("👆 'START MARKET SCAN' ബട്ടൺ ക്ലിക്ക് ചെയ്താൽ Live Data വരും")
+
+st.caption("Beautiful Ultra Scanner UI • Live NSE Data • Made with ❤️")
